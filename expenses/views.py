@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, filters
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.serializers import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Expense
 from .serializers import ExpenseSerializer, ExpenseCreateSerializer
@@ -26,9 +27,12 @@ class ExpenseListView(generics.ListCreateAPIView):
         return ExpenseSerializer
     
     def perform_create(self, serializer):
-        budget_id = serializer.validated_data['budget_id']
-        budget = Budget.objects.get(id=budget_id)
-        serializer.save(user=self.request.user, budget=budget)
+        budget_id = serializer.validated_data.get('budget_id')
+        if budget_id:
+            budget = Budget.objects.get(id=budget_id)
+            serializer.save(user=self.request.user, budget=budget)
+        else:
+            raise ValidationError("budget_id is required")
 
 
 class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -45,8 +49,8 @@ class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
         return ExpenseSerializer
     
     def perform_update(self, serializer):
-        if 'budget_id' in serializer.validated_data:
-            budget_id = serializer.validated_data['budget_id']
+        budget_id = serializer.validated_data.get('budget_id')
+        if budget_id:
             budget = Budget.objects.get(id=budget_id)
             serializer.save(budget=budget)
         else:

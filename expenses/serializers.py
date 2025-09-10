@@ -1,25 +1,26 @@
 from rest_framework import serializers
 from .models import Expense
-from budgets.serializers import BudgetSerializer
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
     """Serializer for Expense model"""
-    budget = BudgetSerializer(read_only=True)
+    budget_name = serializers.CharField(source='budget.name', read_only=True)
+    budget_category = serializers.CharField(source='budget.category', read_only=True)
     budget_id = serializers.IntegerField(write_only=True)
     user = serializers.ReadOnlyField(source='user.username')
     
     class Meta:
         model = Expense
         fields = [
-            'id', 'budget', 'budget_id', 'user', 'description', 'amount', 
+            'id', 'budget_name', 'budget_category', 'budget_id', 'user', 'description', 'amount', 
             'date', 'category', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'budget', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'budget_name', 'budget_category', 'user', 'created_at', 'updated_at']
 
 
 class ExpenseCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating expenses"""
+    budget_id = serializers.IntegerField()
     
     class Meta:
         model = Expense
