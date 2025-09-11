@@ -27,12 +27,7 @@ class ExpenseListView(generics.ListCreateAPIView):
         return ExpenseSerializer
     
     def perform_create(self, serializer):
-        budget_id = serializer.validated_data.get('budget_id')
-        if budget_id:
-            budget = Budget.objects.get(id=budget_id)
-            serializer.save(user=self.request.user, budget=budget)
-        else:
-            raise ValidationError("budget_id is required")
+        serializer.save(user=self.request.user)
 
 
 class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -49,12 +44,7 @@ class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
         return ExpenseSerializer
     
     def perform_update(self, serializer):
-        budget_id = serializer.validated_data.get('budget_id')
-        if budget_id:
-            budget = Budget.objects.get(id=budget_id)
-            serializer.save(budget=budget)
-        else:
-            serializer.save()
+        serializer.save()
     
     def destroy(self, request, *args, **kwargs):
         expense = self.get_object()

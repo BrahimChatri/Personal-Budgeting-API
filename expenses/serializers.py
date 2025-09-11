@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Expense
+from budgets.models import Budget
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -20,11 +21,27 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 class ExpenseCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating expenses"""
-    budget_id = serializers.IntegerField()
+    budget_id = serializers.PrimaryKeyRelatedField(
+        source='budget',
+        queryset=Budget.objects.all(),
+        write_only=True,
+        error_messages={
+            'does_not_exist': 'Budget does not exist',
+            'incorrect_type': 'Invalid budget id',
+            'invalid': 'Invalid budget id',
+            'required': 'budget_id is required'
+        }
+    )
     
     class Meta:
         model = Expense
         fields = ['budget_id', 'description', 'amount', 'date', 'category']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            self.fields['budget_id'].queryset = Budget.objects.filter(user=request.user)
     
     def validate_amount(self, value):
         """Validate that amount is positive"""
@@ -39,13 +56,4 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Date cannot be in the future")
         return value
     
-    def validate_budget_id(self, value):
-        """Validate that budget exists and belongs to user"""
-        from budgets.models import Budget
-        try:
-            budget = Budget.objects.get(id=value)
-            if budget.user != self.context['request'].user:
-                raise serializers.ValidationError("Budget does not belong to you")
-        except Budget.DoesNotExist:
-            raise serializers.ValidationError("Budget does not exist")
-        return value
+    # No need for validate_budget_id; queryset restriction handles existence/ownership
